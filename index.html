@@ -212,16 +212,6 @@ function showResult() {
 
     document.getElementById("resultScreen").innerHTML = html;
 }
-
-function goHome() {
-    showScreen("home");
-}
-
-loadLists();
-</script>
-
-</body>
-</html>
     
     function deleteList() {
     if (confirm("Delete this list?")) {
@@ -231,3 +221,13 @@ loadLists();
         loadLists(); // refresh主頁
     }
 }
+    
+function goHome() {
+    showScreen("home");
+}
+
+loadLists();
+</script>
+
+</body>
+</html>
