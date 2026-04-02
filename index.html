@@ -169,9 +169,12 @@ function startDictation() {
 }
 
 function speak(text) {
-    let u = new SpeechSynthesisUtterance(text);
-    u.lang = "en-US";
-    speechSynthesis.speak(u);
+    let url = "https://translate.google.com/translate_tts?ie=UTF-8&q=" 
+        + encodeURIComponent(text) 
+        + "&tl=en&client=tw-ob";
+
+    let audio = new Audio(url);
+    audio.play();
 }
 
 function autoPlay() {
