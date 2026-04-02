@@ -219,8 +219,11 @@ function goHome() {
 
 loadLists();
 </script>
+
+</body>
+</html>
     
-function deleteList() {
+    function deleteList() {
     if (confirm("Delete this list?")) {
         localStorage.removeItem(currentListName);
 
@@ -228,5 +231,3 @@ function deleteList() {
         loadLists(); // refresh主頁
     }
 }
-</body>
-</html>
