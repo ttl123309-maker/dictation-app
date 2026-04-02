@@ -6,23 +6,31 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<!-- ✅ iOS PWA -->
+<!-- iOS App 模式 -->
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Dictation">
-
-<!-- ✅ 內嵌 icon（唔使另外 file） -->
-<link rel="apple-touch-icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA...">
 
 <style>
 body { font-family: Arial; text-align: center; padding: 20px; }
 button { padding: 8px 15px; margin: 5px; }
 .list { border: 1px solid #ccc; padding: 10px; margin: 10px; cursor: pointer; }
 .screen { display: none; }
+
 .popup {
-    position: fixed; top: 20%; left: 10%; width: 80%;
-    background: white; border: 2px solid black; padding: 20px; display: none;
+    position: fixed;
+    top: 10%;
+    left: 10%;
+    width: 80%;
+    max-height: 70vh;
+    overflow-y: auto;
+    background: white;
+    border: 2px solid black;
+    padding: 20px;
+    display: none;
+    border-radius: 12px;
 }
+
 .correct { color: green; }
 .wrong { color: red; }
 </style>
@@ -30,12 +38,14 @@ button { padding: 8px 15px; margin: 5px; }
 
 <body>
 
+<!-- 主頁 -->
 <div id="home" class="screen">
     <h1>📖 Dictation App</h1>
     <button onclick="openAdd()">➕ Add List</button>
     <div id="lists"></div>
 </div>
 
+<!-- 默書 -->
 <div id="dictation" class="screen">
     <h2 id="progress"></h2>
     <button onclick="replay()">🔊 Replay</button><br>
@@ -43,16 +53,19 @@ button { padding: 8px 15px; margin: 5px; }
     <button onclick="next()">➡️ Next</button>
 </div>
 
+<!-- Result -->
 <div id="resultScreen" class="screen"></div>
 
+<!-- Add -->
 <div class="popup" id="addPopup">
     <h3>Add List</h3>
-    <input id="listName"><br><br>
+    <input id="listName" placeholder="List name"><br><br>
     <textarea id="wordList" rows="6" style="width:90%"></textarea><br>
     <button onclick="saveList()">💾 Save</button>
     <button onclick="closeAdd()">❌ Close</button>
 </div>
 
+<!-- View -->
 <div class="popup" id="viewPopup">
     <h3 id="viewTitle"></h3>
     <div id="viewWords"></div><br>
@@ -61,10 +74,9 @@ button { padding: 8px 15px; margin: 5px; }
         <input type="checkbox" id="randomMode"> 🔀 Random Mode
     </label><br><br>
 
-<button onclick="startDictation()">🚀 Start</button>
-<button onclick="deleteList()">🗑️ Delete List</button>
-<button onclick="closeView()">❌ Close</button>
-    
+    <button onclick="startDictation()">🚀 Start</button>
+    <button onclick="deleteList()">🗑️ Delete List</button>
+    <button onclick="closeView()">❌ Close</button>
 </div>
 
 <script>
@@ -79,6 +91,7 @@ function showScreen(id) {
 }
 showScreen("home");
 
+// Add
 function openAdd() {
     document.getElementById("addPopup").style.display = "block";
 }
@@ -94,6 +107,7 @@ function saveList() {
     loadLists();
 }
 
+// Load lists
 function loadLists() {
     let container = document.getElementById("lists");
     container.innerHTML = "";
@@ -110,6 +124,7 @@ function loadLists() {
     }
 }
 
+// View list
 function viewList(name) {
     let data = localStorage.getItem(name);
     currentList = data.split("\n").filter(w => w.trim() !== "");
@@ -136,6 +151,7 @@ function closeView() {
     document.getElementById("viewPopup").style.display = "none";
 }
 
+// Edit / Delete word
 function editWord(i, val) {
     currentList[i] = val;
     localStorage.setItem(currentListName, currentList.join("\n"));
@@ -147,6 +163,16 @@ function deleteWord(i) {
     viewList(currentListName);
 }
 
+// Delete list
+function deleteList() {
+    if (confirm("Delete this list?")) {
+        localStorage.removeItem(currentListName);
+        document.getElementById("viewPopup").style.display = "none";
+        loadLists();
+    }
+}
+
+// Start
 function startDictation() {
     answers = [];
     index = 0;
@@ -162,10 +188,14 @@ function startDictation() {
     autoPlay();
 }
 
+// AI 語音（Google）
 function speak(text) {
-    let u = new SpeechSynthesisUtterance(text);
-    u.lang = "en-US";
-    speechSynthesis.speak(u);
+    let url = "https://translate.google.com/translate_tts?ie=UTF-8&q="
+        + encodeURIComponent(text)
+        + "&tl=en&client=tw-ob";
+
+    let audio = new Audio(url);
+    audio.play();
 }
 
 function autoPlay() {
@@ -176,6 +206,7 @@ function replay() {
     speak(currentList[index]);
 }
 
+// Next
 function next() {
     answers.push(document.getElementById("answer").value);
     document.getElementById("answer").value = "";
@@ -195,6 +226,7 @@ function updateProgress() {
         "Word " + (index + 1) + " / " + currentList.length;
 }
 
+// Result
 function showResult() {
     showScreen("resultScreen");
 
@@ -212,16 +244,7 @@ function showResult() {
 
     document.getElementById("resultScreen").innerHTML = html;
 }
-    
-    function deleteList() {
-    if (confirm("Delete this list?")) {
-        localStorage.removeItem(currentListName);
 
-        document.getElementById("viewPopup").style.display = "none";
-        loadLists(); // refresh主頁
-    }
-}
-    
 function goHome() {
     showScreen("home");
 }
