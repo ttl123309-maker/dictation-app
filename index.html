@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Dictation App</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- ✅ iOS PWA -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Dictation">
+
+<!-- ✅ 內嵌 icon（唔使另外 file） -->
+<link rel="apple-touch-icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA...">
+
+<style>
+body { font-family: Arial; text-align: center; padding: 20px; }
+button { padding: 8px 15px; margin: 5px; }
+.list { border: 1px solid #ccc; padding: 10px; margin: 10px; cursor: pointer; }
+.screen { display: none; }
+.popup {
+    position: fixed; top: 20%; left: 10%; width: 80%;
+    background: white; border: 2px solid black; padding: 20px; display: none;
+}
+.correct { color: green; }
+.wrong { color: red; }
+</style>
+</head>
+
+<body>
+
+<div id="home" class="screen">
+    <h1>📖 Dictation App</h1>
+    <button onclick="openAdd()">➕ Add List</button>
+    <div id="lists"></div>
+</div>
+
+<div id="dictation" class="screen">
+    <h2 id="progress"></h2>
+    <button onclick="replay()">🔊 Replay</button><br>
+    <input id="answer"><br>
+    <button onclick="next()">➡️ Next</button>
+</div>
+
+<div id="resultScreen" class="screen"></div>
+
+<div class="popup" id="addPopup">
+    <h3>Add List</h3>
+    <input id="listName"><br><br>
+    <textarea id="wordList" rows="6" style="width:90%"></textarea><br>
+    <button onclick="saveList()">💾 Save</button>
+    <button onclick="closeAdd()">❌ Close</button>
+</div>
+
+<div class="popup" id="viewPopup">
+    <h3 id="viewTitle"></h3>
+    <div id="viewWords"></div><br>
+
+    <label>
+        <input type="checkbox" id="randomMode"> 🔀 Random Mode
+    </label><br><br>
+
+    <button onclick="startDictation()">🚀 Start</button>
+    <button onclick="closeView()">❌ Close</button>
+</div>
+
+<script>
+let currentList = [];
+let currentListName = "";
+let answers = [];
+let index = 0;
+
+function showScreen(id) {
+    document.querySelectorAll(".screen").forEach(s => s.style.display = "none");
+    document.getElementById(id).style.display = "block";
+}
+showScreen("home");
+
+function openAdd() {
+    document.getElementById("addPopup").style.display = "block";
+}
+function closeAdd() {
+    document.getElementById("addPopup").style.display = "none";
+}
+
+function saveList() {
+    let name = document.getElementById("listName").value;
+    let data = document.getElementById("wordList").value;
+    localStorage.setItem(name, data);
+    closeAdd();
+    loadLists();
+}
+
+function loadLists() {
+    let container = document.getElementById("lists");
+    container.innerHTML = "";
+
+    for (let i = 0; i < localStorage.length; i++) {
+        let key = localStorage.key(i);
+
+        let div = document.createElement("div");
+        div.className = "list";
+        div.innerText = key;
+        div.onclick = () => viewList(key);
+
+        container.appendChild(div);
+    }
+}
+
+function viewList(name) {
+    let data = localStorage.getItem(name);
+    currentList = data.split("\n").filter(w => w.trim() !== "");
+    currentListName = name;
+
+    document.getElementById("viewTitle").innerText = name;
+
+    let html = "";
+    currentList.forEach((word, i) => {
+        html += `
+            <div>
+                ${i+1}. 
+                <input value="${word}" onchange="editWord(${i}, this.value)">
+                <button onclick="deleteWord(${i})">🗑️</button>
+            </div>
+        `;
+    });
+
+    document.getElementById("viewWords").innerHTML = html;
+    document.getElementById("viewPopup").style.display = "block";
+}
+
+function closeView() {
+    document.getElementById("viewPopup").style.display = "none";
+}
+
+function editWord(i, val) {
+    currentList[i] = val;
+    localStorage.setItem(currentListName, currentList.join("\n"));
+}
+
+function deleteWord(i) {
+    currentList.splice(i, 1);
+    localStorage.setItem(currentListName, currentList.join("\n"));
+    viewList(currentListName);
+}
+
+function startDictation() {
+    answers = [];
+    index = 0;
+
+    if (document.getElementById("randomMode").checked) {
+        currentList.sort(() => Math.random() - 0.5);
+    }
+
+    document.getElementById("viewPopup").style.display = "none";
+    showScreen("dictation");
+
+    updateProgress();
+    autoPlay();
+}
+
+function speak(text) {
+    let u = new SpeechSynthesisUtterance(text);
+    u.lang = "en-US";
+    speechSynthesis.speak(u);
+}
+
+function autoPlay() {
+    setTimeout(() => speak(currentList[index]), 500);
+}
+
+function replay() {
+    speak(currentList[index]);
+}
+
+function next() {
+    answers.push(document.getElementById("answer").value);
+    document.getElementById("answer").value = "";
+
+    index++;
+
+    if (index >= currentList.length) {
+        showResult();
+    } else {
+        updateProgress();
+        autoPlay();
+    }
+}
+
+function updateProgress() {
+    document.getElementById("progress").innerText =
+        "Word " + (index + 1) + " / " + currentList.length;
+}
+
+function showResult() {
+    showScreen("resultScreen");
+
+    let html = "<h3>📊 Result</h3>";
+
+    for (let i = 0; i < currentList.length; i++) {
+        if (answers[i].toLowerCase() === currentList[i].toLowerCase()) {
+            html += `<div class="correct">✅ ${currentList[i]}</div>`;
+        } else {
+            html += `<div class="wrong">❌ ${answers[i]} → ${currentList[i]}</div>`;
+        }
+    }
+
+    html += `<br><button onclick="goHome()">🏠 Back Home</button>`;
+
+    document.getElementById("resultScreen").innerHTML = html;
+}
+
+function goHome() {
+    showScreen("home");
+}
+
+loadLists();
+</script>
+
+</body>
+</html>
