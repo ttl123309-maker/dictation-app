@@ -219,6 +219,14 @@ function goHome() {
 
 loadLists();
 </script>
+    
+function deleteList() {
+    if (confirm("Delete this list?")) {
+        localStorage.removeItem(currentListName);
 
+        document.getElementById("viewPopup").style.display = "none";
+        loadLists(); // refresh主頁
+    }
+}
 </body>
 </html>
